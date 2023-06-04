@@ -59,6 +59,43 @@ fn use_options_enum() {
     // 是否为 None
     println!("is some_number is None?: {:?}", &some_number.is_none());
     println!("is absent_number is None?: {:?}", &absent_number.is_none());
+    // unwrap, 如果是Some(v), 则返回v, 如果是None, 则直接panic, 其实就是处理是否为空指针, 遇到空指针直接报错
+    println!("some_number is: {:?}", &some_number.unwrap());
+    // None使用unwrap会直接panic
+    // println!("None {:?} must panic", absent_number.unwrap());
+
+    // expect, 和 unwrap 类似, 但是遇到None, 在panic的同时, 还会打印出 msg 信息
+    // println!("current None msg is: {:?}", &absent_number.expect("your fucking garbage code!"));
+
+    // unwrap_or Some(v) -> v, None -> default
+    println!("------------------------------------------------------------------------------------------------");
+    println!("some_number unwrap_or: {:?}", &some_number.unwrap_or(0));
+    println!("None unwrap_or: {:?}", &absent_number.unwrap_or(1)); // None被转换为了1
+
+    // unwrap_or_else, Some(v) -> v, None返回回调函数返回值
+    println!("------------------------------------------------------------------------------------------------");
+    println!("None unwrap_or_else: {:?}", &absent_number.unwrap_or_else(|| { 123123123 }));
+
+    // unwrap_or_default, 如果是None, 则返回T::default() 的返回值, 这里是i32::default(), 也就是0
+    println!("------------------------------------------------------------------------------------------------");
+    println!("None unwrap_or_default: {:?}", &absent_number.unwrap_or_default());
+
+    // map, 将Options<T> 通过回调函数, 转换为 Options<U>
+    println!("------------------------------------------------------------------------------------------------");
+    println!("some_number after map is: {:?}", &some_number.map(|v| { v.to_string() + &"wocao".to_string() }));
+
+    // map_or, 和map不同, 他返回的是U, 而不是Options<U>, 同时会将None转换为default
+    println!("------------------------------------------------------------------------------------------------");
+    println!("some_number after map_or is: {:?}", &some_number.map_or("fucker".to_string(), |v| { v.to_string() + &"fucker".to_string() }));
+    println!("None after map_or is: {:?}", &absent_number.map_or("fucker".to_string(), |v| { v.to_string() + &"fucker".to_string() }));
+
+    // map_or_else 默认值变成了default回调, 而不是一个value, 其他的和 map_or 一样
+    println!("------------------------------------------------------------------------------------------------");
+    println!("some_number after map_or_else is: {:?}", &some_number.map_or_else(|| {"fucker map_or_else".to_string()}, |v| {v.to_string()}));
+    println!("None after map_or_else is: {:?}", &absent_number.map_or_else(|| {"fucker map_or_else".to_string()}, |v| {v.to_string()}));
+
+    println!("------------------------------------------------------------------------------------------------");
+    
     // println!("this char is: {:?}", &some_char);
     // println!("this null is: {:?}", &absent_number);
     // Option<T> 和 T, 是两个类型, 避开了空指针异常的情况, 编译阶段会报错
