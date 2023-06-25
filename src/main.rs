@@ -6,6 +6,8 @@ use std::io; // 获取输入输出的标准库
 use rand::Rng;
 // 枚举, 用于比较数字大小
 use std::cmp::Ordering;
+use num::BigInt;
+use num::bigint::BigUint;
 
 #[path = "../modules/mod.rs"]
 mod modules;
@@ -80,7 +82,11 @@ fn main() {
     // modules::slice::slice_references();
     // 结构体
     // modules::structs::structs_main();
-    modules::enum_mod::enum_mod_main();
+    // modules::enum_mod::enum_mod_main();
+    // modules::mem_replace::use_replace();
+    // let result: BigUint = modules::mem_replace::fibonacci(10);
+    // println!("计算结果为: {:?}", result);
+    modules::ownership::main_ownership();
 }
 
 

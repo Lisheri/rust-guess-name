@@ -243,3 +243,75 @@ fn gives_ownership() -> String {
 fn takes_and_gives_back(a_string: String) -> String {
     a_string // 返回a_string, 并将所有权移动给调用的函数
 }
+
+// 所有者被释放,
+// 所在值也被清除(drop)
+fn print_padovan() {
+    // padovan的类型是 Vec<i32>, 也就是32位整数向量
+    // 在内存中, 他也是存储在一个栈帧中的(类似C++)
+    // 这个栈帧中有一个容量和一个长度, 长度会随着push发生变化, 映射堆上开辟的空间大小
+    // 栈帧中还包含一个指针(缓冲区地址), 指向了堆中的真实地址(缓冲区)
+    // 向量的缓冲区分配在堆上, 存储的元素是32位的数值。
+    // 而 padovan指针、容量和长度直接保存在 print_padovan 函数的栈帧中
+    let mut padovan = vec![1, 1, 1];
+    for i in 3..10 {
+        let next = padovan[i-3] + padovan[i-2];
+        padovan.push(next);
+    }
+    println!("p(1..10) = {:?}", padovan);
+    // 释放 pavodan
+    // 走到最后, 变量padovan 在函数底部超出作用域时, 程序会清除这个指针, 而这个指针指向了一个缓冲区地址
+    // 那么这个缓冲区也会被清除
+}
+
+// 与变量拥有自己的值一样, tuple, struct, 以及vec均拥有自己的元素(堆上)
+
+struct Person { name: String, birth: i32 }
+impl Person {
+    fn new(name: String, birth: i32) -> Self {
+        Self { name, birth }
+    }
+}
+
+fn compose() {
+    let mut composers = Vec::new();
+    composers.push(Person::new("Palestrina".to_string(), 1525));
+    composers.push(Person::new("Dowland".to_string(), 1563));
+    composers.push(Person::new("Lully".to_string(), 1632));
+
+    // 最终 composers 形成了一棵较为复杂的所有权树
+    // 在 compose 的栈帧中, 存储了一个 compose 栈帧
+    // compose有容量和长度, 同时有一个指针, 指向了堆中的缓冲区地址
+    // 在堆中的缓冲区上, 存储了三段 Person 实例, 分别拥有一个容量, 长度和缓冲区指针
+    // 每一块的指针指向的都是自己的实例存储在堆上的地址, 在这个地址上存储了一个字符串值和一个32位有符号整数
+    // 其实本质上他们的所有权是比较清晰的, 每一个值都都只有一个所有者, 因此何时清除他们非常的明确。
+    // 因此可以通过 "树" 来描述所有权
+    // 你的所有者是你"爹", 你所拥有的值都是你的"儿子", 每棵树的根节点都是一个变量。
+    // 当控制流超出这个变量所在的作用域(栈帧)时, 整个所有权树都被清除
+    // 这棵树严格遵循Rust中的单一所有权规则, 禁止任何形式的结构再链接
+    // Rust程序中每一个值都是某棵树的成员, 都可以追溯到某个根变量
+    // Rust清除某个值不会像在C/C++中使用 free 和 delete, 而是通过将其从所有权树中删除实现的
+
+    // 看起来上述规则会让Rust不如其他语言那么强大, 但也就是因为Rust在这方面不够强
+    // 他不允许开发者构建任意形式的对象图谱, 才能对程序进行更强大的分析
+    // 他的安全性就是基于这种 "代码中实体关系的可追踪性"
+    // 即便是有这样的限制, 在实际开发中也不会影响解决问题的灵活性, 以及找到足够完美的解决方案
+    for composer in &composers {
+        println!("{}, born {}", composer.name, composer.birth);
+    }
+
+    // 不过, 上面所说的所有权规则过于严苛, 因此Rust从几个方面进行了扩展
+    // 1. 可以把值从一个所有者转移到另一个所有者, 从而方便构建、重塑和销毁关系树
+    // 2. 标准库提供了基于引用计数的指针类型Rc和Arc, 使用它们可以在满足某些限制条件的前提下将值指定给多个所有者
+    // 3. 对一个值, 可以 "借用其引用"。 引用格式生命期有限的非所有权指针(只读)
+}
+/**
+ * 还是老生常谈的这几个所有权规则:
+ * 1. Rust中每个值都有一个所有者
+ * 2. 值在任一时刻有且只有一个所有者
+ * 3. 当所有者(变量)离开作用域, 这个值将被丢弃
+ */
+pub fn main_ownership() {
+    // print_padovan();
+    compose();
+}

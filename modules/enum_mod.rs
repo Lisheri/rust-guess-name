@@ -1,6 +1,6 @@
 // 声明 unstable 方法
 #![feature(is_some_and)]
-
+#![feature(result_option_inspect)]
 use num::abs;
 
 #[derive(Debug)]
@@ -48,11 +48,11 @@ enum Option<T> {
     Some(T),
 }
 */
-
 fn use_options_enum() {
     let some_number = Some(100);
     // let some_char = Some('a');
     let absent_number: Option<i32> = None;
+    let some_number_defer: Option<&i32> = Some(&100);
     println!("this number is: {:?}", &some_number);
     println!("some_number is Some?: {:?}", &some_number.is_some());
     println!("is some_number > 10 ?: {:?}", &some_number.is_some_and(|x| { x > 10 }));
@@ -95,6 +95,33 @@ fn use_options_enum() {
     println!("None after map_or_else is: {:?}", &absent_number.map_or_else(|| {"fucker map_or_else".to_string()}, |v| {v.to_string()}));
 
     println!("------------------------------------------------------------------------------------------------");
+
+    // inspect 遇到Some(v)调用 f(&v), 返回枚举成员本身
+    // ? feature API, 声明了也会报错, 目前无解, 无法使用
+    // println!("inspect: {:?}", &absent_number.inspect(|v| {println!("正在调用回调函数inspect")}));
+    println!("------------------------------------------------------------------------------------------------");
+
+    // ok_or 将Options<T> 转换为 Result<T, E>
+    // None 返回 Err(err)
+    println!("some_number ok_or is: {:?}", &some_number.ok_or("fuck").unwrap());
+
+    // ok_or_else, 与ok_or类似, 只不过参数变为回调函数, 回调函数返回错误信息的值
+    println!("------------------------------------------------------------------------------------------------");
+    
+    // 解引用, 将Some(&v) 解引用, 返回Some(v)
+    println!("some_number_defer as_deref is: {:?}", &some_number_defer.as_deref());
+    // 和as_defer类似的还有 as_deref_mut, 只不过后者是解除可变引用 
+    println!("------------------------------------------------------------------------------------------------");
+    // 其实就是 &, 只不过是Some中的内容进行 &, 有一个是None, 就返回None
+    // 与之类似的还有 or, 也就是 | 
+    println!("some_number add is: {:?}", &some_number.and(Some(10000)));
+    println!("------------------------------------------------------------------------------------------------");
+
+    println!("None or None: {:?}", None::<i32>.or(None));
+    println!("Some or None: {:?}", None::<i32>.or(Some(1000)));
+    println!("------------------------------------------------------------------------------------------------");
+    
+
     
     // println!("this char is: {:?}", &some_char);
     // println!("this null is: {:?}", &absent_number);

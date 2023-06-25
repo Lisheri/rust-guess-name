@@ -7,3 +7,4 @@ pub mod references_and_borrowing;
 pub mod slice;
 pub mod structs;
 pub mod enum_mod;
+pub mod mem_replace;
