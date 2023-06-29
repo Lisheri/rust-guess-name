@@ -304,6 +304,97 @@ fn compose() {
     // 1. 可以把值从一个所有者转移到另一个所有者, 从而方便构建、重塑和销毁关系树
     // 2. 标准库提供了基于引用计数的指针类型Rc和Arc, 使用它们可以在满足某些限制条件的前提下将值指定给多个所有者
     // 3. 对一个值, 可以 "借用其引用"。 引用格式生命期有限的非所有权指针(只读)
+
+}
+
+// 移动
+fn move_func() {
+    // 对多数类型而言, 给变量赋值, 给函数传值或从函数返回值这样的操作不会复制值, 而是 移动(move)值, 也就是所谓的 "转移"
+    // 所谓move, 就是原来的所有者让渡这个值的 所有权 给目标所有者, 并变成初始化状态, 然后由目标所有者控制这个值的生命周期
+    // Rust 程序会以每次一个值, 每次转移一个的形式构造和拆解复杂的结构
+    // ! Rust确实改变了如此基础性操作的含义, 因为纵观多种目前主流语言, "赋值"操作 在其中的风格已经明显不同了
+    // ? 同样使用Vec, python采用引用计数, 直接将一个vec赋值给一个新值的时候是直接拷贝指针, 并记录新的引用计数
+    // ? 但是C++这样的赋值, 采取的是深拷贝的模式, 直接clone了一个新的值, 存储在堆中, 尽管消耗更大, 但是所有权清晰, 释放该值的时刻更简单。
+    // ? 当然, c++程序员往往并不认可原生克隆的模式
+
+    // ? rust模式
+    // let s = vec!["udon".to_string(), "ramen".to_string(), "soba".to_string()];
+    // let u = s;
+    // let t = s;
+    // Rust会把字符串放到堆内存中, 但是变量 s会存储在栈帧上, 有长度和容量,以及一个指向堆内存的指针(与C++一样)
+    // 根据所有权规则, 任意时刻只有一个所有者, 因此, 当发生 let u = s; 时, s的所有权已经转移给了u, 同时s变量变为未初始化状态
+    // 因此在u初始化完成后, 原有栈帧从s移动到u上, 指针指向地址不变, 堆内存不变
+    // 这样就避开了深拷贝带来的消耗, 同时也不用去维护引用计数, 只是发生了一个简单的"移动", 编译器会认为s尚未初始化
+    // 但是继续执行 let t = s; 此时会发生panic, 因为s已经被移动过了, rust编译器会抛错, ownership_double_move
+    // 如果想要和C++一样的模式, 并且不发生所有权移动, 此时需要使用如下方式:
+    let s = vec!["udon".to_string(), "ramen".to_string(), "soba".to_string()];
+    let u = s.clone();
+    let t = s.clone();
+
+    // ! 发生转移的只是存储在栈帧中的 "特征值(value proper)" 也就只包含了3个字, 指针, 长度, 容量。而指针指向的堆内存上的内容, 从未发生变化, 变量所有权是由特征值来决定的
+}
+
+struct Person1 { name: Option<String>, birth: i32 }
+
+fn move_vector() {
+    let mut v = Vec::new();
+    for i in 101..106 {
+        v.push(i.to_string());
+    }
+    // 1. 从末尾取值
+    let fifth = v.pop().unwrap();
+    assert_eq!(fifth, "105");
+
+    // 2. 从向量中间取值, 同时使用最后一个值填充
+    let second = v.swap_remove(1);
+    assert_eq!(second, "102");
+
+    // 3. 用其他值换出对应的值
+    let third = std::mem::replace(&mut v[2], "substitute".to_string());
+    assert_eq!(third, "103");
+
+    assert_eq!(v, vec!["101", "104", "substitute"]);
+
+    // 上述方法均能保证向量是被填满的状态, 然后从向量中换出对应的值
+
+    let mut composers = Vec::new();
+    composers.push(Person1 { name: Some("Palestrina".to_string()), birth: 25 });
+
+    // 不能这样做 let first_name = composers[0].name
+    // 但是可以使用如下方式
+    // let first_name = std::mem::replace(&mut composers[0].name, None);
+    // assert_eq!(first_name, Some("Palestrina".to_string()));
+    // assert_eq!(composers[0].name, None);
+
+    // 其实上面那个 replace 的方式, 就是所谓的 take 方法, 这里的调用结果和前面replace是一样的
+    // 而且使用 take处理 Option 枚举是一个非常常见的方式
+    let first_name = composers[0].name.take();
+    assert_eq!(first_name, Some("Palestrina".to_string()));
+    assert_eq!(composers[0].name, None);
+}
+
+fn copy_ownership() {
+    // 目前上面所有的例子所涉及的值的类型包含 vector, string, 和其他可能占用较多内存且复制开销较大的类型
+    // move 让这些类型的所有者保持清晰, 赋值代价也小。但是对于整数或者字符这些比较简单的类型, 这种小心翼翼的处理就没有必要了。
+    // 比如下面的String 赋值 与 i32 赋值在内存中的差异
+    let str1 = "somnambulance".to_string();
+    let str2 = str1; // 发生move
+
+    // 与字符串不同, 字符串包含在堆内存中的字符串本体, 因此 str1赋值给str2时, 所有权就发生了移动
+    // 但是 i32 只是内存中的一种位模式, 它并不包含任何堆中的资源, 除了所包含的字节以外, 什么都没有。
+    // 因此在 num1 向 num2 转移时, 会把num1完整的复制一份
+    let num1: i32 = 36;
+    let num2 = num1;
+    println!("num1: {}", num1);
+    println!("num2: {}", num2);
+
+    // 将 num1 视为未初始化确实很重要, 但其实继续使用 num1 也并没有什么坏处(开销小)。
+    // 对数值类型来说, move 的好处不仅无法提现, 反而会导致不便
+    // 大多数类型确实会发生move, 但也有例外, 也就是被 Rust 选定为 Copy 类型的值
+    // Copy类型的值在赋值的时候会直接copy, 而不是转移所有权。
+    // 赋值的原变量仍然是初始化且可用的, 值也跟原来一样
+    // 将copy类型的值转移给函数和构造函数也是一样的
+    
 }
 /**
  * 还是老生常谈的这几个所有权规则:
@@ -313,5 +404,8 @@ fn compose() {
  */
 pub fn main_ownership() {
     // print_padovan();
-    compose();
+    // compose();
+    // move_func()
+    // move_vector();
+    copy_ownership();
 }
