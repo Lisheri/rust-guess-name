@@ -86,8 +86,9 @@ fn main() {
     // modules::mem_replace::use_replace();
     // let result: BigUint = modules::mem_replace::fibonacci(10);
     // println!("计算结果为: {:?}", result);
-    modules::ownership::main_ownership();
+    // modules::ownership::main_ownership();
     // println!("计算结果为: {:?}", modules::climb_stairs::climb_stairs(2));
+    modules::reference::reference_fn();
 }
 
 

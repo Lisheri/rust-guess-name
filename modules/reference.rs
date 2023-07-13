@@ -30,9 +30,82 @@ fn sort_works(table: &mut Table) {
     }
 }
 
+// * 引用作为值
+fn reference_for_value() {
+    // 在Rust中, 引用是通过 & 操作符显示创建的, 而解引用也要显示使用 * 操作符
+    let x = 10;
+    let r = &x; // 创建x的引用 r
+    let res = *r == 10; // true
+    println!("x == r: {}", res); // 解引用并对比, *&x == x
+
+   // 可修改引用
+    let mut y = 32;
+    let m = &mut y; // 创建y 的可变引用
+    *m += 32; // m解引用后修改值, 其实就是在修改y的值
+    // ! 注意, 这里不能使用y, 因为创建可变引用后, 不能同时拥有对该值的任何其他引用, 否则可能会导致出现悬垂引用
+    assert_eq!(*m, 64); // 它们是相等的
+
+    // ? 不过对于前面的 show 函数，在传递引用而不是值之后， 并没有使用 * 操作符来解引用
+    // ? 这个主要是由于 .操作符的特性, .操作符会在必要时对其左操作数进行隐式解引用
+    struct Anime { name: &'static str, bechdel_pass: bool };
+    let aria = Anime { name: "Aria: The Animation", bechdel_pass: true };
+    let anime_ref = &aria;
+    // .操作符会自动解引用, 因此我们可以通过 &Anime.name 访问到 name真实的类型, 也就是 &str, 同时还包含了他的生命周期
+    assert_eq!(anime_ref.name, "Aria: The Animation");
+    // 上述代码等价于: assert_eq!((*anime_ref).name, "Aria: The Animation")；
+
+    // 除了自动解引用外, .操作符 在访问一个结构体方法时, 还可以隐式的对左操作数进行借用
+    let mut v = vec![1873, 1939];
+    v.sort(); // 这里会自动产生了对 v 的可修改借用, 因此在调用完成sort() 方法后， 变量v还可以继续使用
+    // 这个也是结构体方法第一个默认参数是 &Self的原因
+    // 上述代码等价于 (&mut v).sort();
+}
+
+// 
+fn reference_change_address(b: bool) {
+    // 给Rust引用赋值会导致它指向新的地址
+    // 这一点和C系语法完全不同， 所有C系语言, 引用一经赋值后, 不能将这个引用指向初始值之外的任何其他地址
+    let x = 10;
+    let y = 20;
+    let mut r = &x;
+    // 如果条件成立, r的地址将变为 &y, 此时引用地址已发生变化
+    if b { r = &y };
+    assert!(*r == 10 || *r == 20);
+}
+
+fn infinite_reference() {
+    // Rust允许引用的引用， 并且无论多少层引用， .操作符都能找到最终值
+    struct Point { x: i32, y: i32 };
+    let point = Point { x: 100, y: 200 };
+    let r: &Point = &point;
+    let rr: &&Point = &r;
+    let rrr: &&&Point = &rr;
+    // 无论堆叠多少层引用, 都可以通过.解引用 并找到原始值
+    assert!(rrr.x == 100);
+
+    // 除了 .操作符以外， Rust的比较操作符也能够看穿无限层级, 抵达最原始的值
+    let x = 10;
+    let y = 10;
+    let rx = &x;
+    let ry = &y;
+    let rrx = &rx;
+    let rry = &ry;
+    assert!(rrx == rry);
+
+    // 如果一定要对比两个指针的地址是否相等, 可以使用 std::ptr::eq
+    println!("利用 std::ptr::eq 对比指针地址： {}", std::ptr::eq(*rrx, rx));
+
+    let x: &i32 = &0;
+    println!("x现在是： {}", x);
+
+    // Rust的引用永远不会为空, 引用没有默认初始值, 在初始化之前任何值都不能使用。
+    // 不过在机器级别, Rust将 Options<&T>::None作为空指针使用, 将 Some(&T)作为非空指针, 因此Option<&T>完全可以像C系列的空指针一样有效使用
+    // 只是在使用之前要求开发人员必须检测它是否为 None
+}
+
 pub fn reference_fn() {
     // 建表
-    let mut table = Table::new();
+    let mut table: HashMap<String, Vec<String>> = Table::new();
     table.insert("Gesualdo".to_string(), vec!["many madrigals".to_string(), String::from("Tenebrae Responsoria")]);
     table.insert("Garavaggio".to_string(), vec!["Musicians".to_string(), String::from("The Calling of St. Matthew")]);
     table.insert("Cellini".to_string(), vec!["Perseus with the head of Medusa".to_string(), String::from("a salt cellar")]);
@@ -70,5 +143,16 @@ pub fn reference_fn() {
     // 排序
     sort_works(&mut table);
     show(&table);
+
+    println!("------------------------------------------------------------------------------------");
+    reference_for_value();
+
+    println!("------------------------------------------------------------------------------------");
+
+    reference_change_address(true);
+    reference_change_address(false);
+
+    println!("------------------------------------------------------------------------------------");
+    infinite_reference();
     // println!("this is reference");
 }
