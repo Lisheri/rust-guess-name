@@ -88,7 +88,7 @@ fn main() {
     // println!("计算结果为: {:?}", result);
     // modules::ownership::main_ownership();
     // println!("计算结果为: {:?}", modules::climb_stairs::climb_stairs(2));
-    modules::reference::reference_fn();
+    modules::reference::reference::reference_fn();
 }
 
 
