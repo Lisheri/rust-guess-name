@@ -54,7 +54,10 @@ fn guess_number() {
 }
 // 处理一次猜测
 #[warn(unused_assignments)]
-fn main() {
+// 如果不使用 tokio::main 修饰入口, 则需要引入 use futures::executor::block_on;
+// 然后在使用 block_on(async函数)
+#[tokio::main] // 允许main使用 async/await
+async fn main() {
     // guess_number();
     // modules::variables::variables_data_type();
     // modules::variables::variables_array_fn();
@@ -88,7 +91,8 @@ fn main() {
     // println!("计算结果为: {:?}", result);
     // modules::ownership::main_ownership();
     // println!("计算结果为: {:?}", modules::climb_stairs::climb_stairs(2));
-    modules::reference::reference::reference_fn();
+    // modules::reference::reference::reference_fn();
+    modules::expression::expression_main().await;
 }
 
 
